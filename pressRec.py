@@ -1,38 +1,52 @@
 #!/usr/bin/env python
-#Button press starts video for 5 seconds
 
 import RPi.GPIO as GPIO
 import time
 import subprocess
 import psutil
 import os
+import urllib2
+import json
+import sys
 
-channel = 17
-PROCNAME = "raspivid"
+from datetime import datetime
+from twython import Twython
 
+# Twitter bot setup
+# See http://www.makeuseof.com/tag/how-to-build-a-raspberry-pi-twitter-bot/
+CONSUMER_KEY = '***************YOUR DATA*****************'
+CONSUMER_SECRET = '***************YOUR DATA*****************'
+ACCESS_KEY = '***************YOUR DATA*****************'
+ACCESS_SECRET = '***************YOUR DATA*****************'
+api = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET) 
+
+# Button on GPIO 18
+channel = 18
+
+# Action when button pressed
 def runCam(channel):
-    piVid = subprocess.Popen(["raspivid",  "-o",  "-", "-t"," 0", "-w", "640", "-h", "480", "-fps", "25", "-b", "2000000", "-g", "50"], stdout=subprocess.PIPE)
-    ffmpeg = subprocess.Popen(["/home/pi/arm/bin/ffmpeg", "-re", "-ar", "44100", "-ac", "2", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-i", "/dev/zero", "-f", "h264", "-i", "-", "-vcodec", "copy", "-acodec", "aac", "-ab", "128k", "-g", "50", "-strict", "experimental", "-f", "flv", "rtmp://a.rtmp.youtube.com/live2/shunshou.pyf1-dvt8-vdm5-8d02"], stdin=piVid.stdout)
-    print "runCam called"
-        
-def camKill(channel):
-    print "He's dead Jim"
+    
+    # Quickly take photo 
+    picam = subprocess.Popen(["raspistill", "-w",  "600", "-h"," 400", "-o", "/home/pi/piRestful/public/visitor.jpg", "-t", "1"], stdout=subprocess.PIPE)
 
+    # Wait so that bell_rang POST notification is sent AFTER the visitor image has been updated
+    time.sleep(1);
+    data = {"bell_rang" : "1"}
+    req = urllib2.Request("http://morning-basin-3078.herokuapp.com")
+    req.add_header("Content-Type","application/json")
+    response = urllib2.urlopen(req, json.dumps(data))
+    print response
+
+    # Send current time and Web app location to Twitter
+    i = datetime.now()
+    print i.strftime('%Y/%m/%d %H:%M:%S UTC \r\n')
+    api.update_status(status='@cs294visitors You have a new visitor! http://morning-basin-3078.herokuapp.com  '+i.strftime('%Y/%m/%d %H:%M:%S UTC'))
+
+# Setup button GPIO 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(channel, GPIO.IN, GPIO.PUD_UP)
 GPIO.add_event_detect(channel, GPIO.FALLING, bouncetime=3000)
 GPIO.add_event_callback(channel, runCam)
-
-#GPIO.wait_for_edge(17, GPIO.FALLING)
-#piVid = subprocess.Popen(["raspivid",  "-o",  "-", "-t"," 0", "-w", "640", "-h", "480", "-fps", "25", "-b", "500000", "-g", "50"], stdout=subprocess.PIPE)
-#subprocess.Popen([ ./ffmpeg -re -ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero -f h264 -i - -vcodec copy -acodec aac -ab 128k -g 50 -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/shunshou.b25p-r6vx-adac-8kc9"], shell=True)
-#for line in piVid.stdout:
-#    print line
-#time.sleep(2)
-#GPIO.wait_for_edge(17, GPIO.FALLING)
-#for proc in psutil.process_iter():
-#    if proc.name() == PROCNAME:
-#         proc.kill()
 
 while True:
     time.sleep(0.1)
