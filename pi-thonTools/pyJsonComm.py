@@ -8,10 +8,10 @@ import os
 class jsonComm:
 
 	streamId = ""
-	ytId = "1234"
+	ytId = "123456"
 	#these should be static
 	baseUrl = "https://contextualvideo-shunshou.rhcloud.com/"
-	mac = "08:00:2b:00:01:02"
+	mac = "01:02:03:04:05:06"
 	
 	def getYtPost(self):
 		url = self.baseUrl + "pi_getYT_3"
@@ -35,5 +35,5 @@ class jsonComm:
 		req = urllib2.Request(url)
 		req.add_header('Content-Type', 'application/json')
 		response = urllib2.urlopen(req, json.dumps(data))
-		print response
+		print response.read()
 
