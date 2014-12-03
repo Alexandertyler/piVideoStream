@@ -5,36 +5,35 @@ import json
 import sys
 import os
 
-class jsonCommRpi:
+class jsonComm:
+
 	streamId = ""
-	ytId = ""
+	ytId = "1234"
 	#these should be static
-	baseUrl = "https://contextualvideo-shunshou.rhcloud.com"
-	mac = ""
+	baseUrl = "https://contextualvideo-shunshou.rhcloud.com/"
+	mac = "08:00:2b:00:01:02"
 	
-
-    def getYtPost(self):
-		url = self.baseUrl + "/pi_getYT_3"
+	def getYtPost(self):
+		url = self.baseUrl + "pi_getYT_3"
 		data = { "mac" : self.mac }
-
 		req = urllib2.Request(url)
 		req.add_header('Content-Type', 'application/json')
 		response = urllib2.urlopen(req, json.dumps(data))
 		returnJson = response.read()
-		print returnJson
+		print "Returned Json is " + returnJson
 		decodedJson = json.loads(returnJson)
-		self.streamId = decoded["stream_id"]
-		self.ytId = decoded["youtube_id"
+		self.streamId = decodedJson["id"]
+		self.ytId = decodedJson["ytid"]
 	
 	def piStreamPost(self, flag, compass):
-		#flag options are /append or /stop
-		url = self.baseUrl + flag
+		#flag options are start, append or done
+		url = self.baseUrl + "pi_" + flag + "_context"
 		data = { "id" : self.streamId, 
 				 "compass" : compass,
 				 "time_offset" : "0",
 				 "date_offset" : "0" }
 		req = urllib2.Request(url)
-		req.add_header('COntent-Type', 'application/json')
+		req.add_header('Content-Type', 'application/json')
 		response = urllib2.urlopen(req, json.dumps(data))
 		print response
 
